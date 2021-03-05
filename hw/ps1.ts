@@ -1,0 +1,3 @@
+Function mapExercise(Array, function){
+    
+}
