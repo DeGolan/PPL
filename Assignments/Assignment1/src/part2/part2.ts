@@ -62,7 +62,6 @@ export const runLengthEncoding: (str: string) => string = (
     ""
   );
 };
-//console.log(runLengthEncoding("aaabbbccc"));
 
 //Question 3
 export const isPaired: (str: string) => boolean = (str: string): boolean => {
@@ -82,4 +81,3 @@ export const isPaired: (str: string) => boolean = (str: string): boolean => {
   }, "");
   return result.length == 0;
 };
-console.log(isPaired("This is [some[ (text)"));
