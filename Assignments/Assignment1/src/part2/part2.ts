@@ -26,7 +26,7 @@ const helper = (
   return helper(
     strArr,
     position + 1,
-    `${result}${lastChar}${count > 0 ? count : ""}`,
+    `${result}${lastChar}${count > 1 ? count : ""}`,
     strArr[position],
     1
   );
@@ -36,7 +36,6 @@ export const runLengthEncoding: (str: string) => string = (
 ): string => {
   return helper(stringToArray(str), 0, "", "", 0); //input,position,result,lastChar,count
 };
-
 //Question 3
 export const isPaired: (str: string) => boolean = (str: string): boolean => {
   const stringArr: string[] = stringToArray(str);
