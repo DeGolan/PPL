@@ -11,59 +11,31 @@ export const countVowels: (str: string) => number = (str: string): number => {
     0
   );
 };
-//console.log(countVowels("This is SOME Text"));
-/* Question 2 */
-/*export const runLengthEncoding: (str: string) => string = (
-  str: string
+
+const helper = (
+  strArr: string[],
+  position: number,
+  result: string,
+  lastChar: string,
+  count: number
 ): string => {
-  if (str.length == 0) return "";
-  let stringArr: string[] = stringToArray(str);
-  let count: number = 0;
-  const result: string = stringArr.reduce((acc: string, curr: string) => {
-    if (curr == acc[acc.length - 1]) {
-      count++;
-      return acc;
-    } else {
-      acc = acc + count + curr;
-      count = 1;
-      return acc;
-    }
-  }, stringArr[0]);
-  return count > 1 ? result + count : result;
+  if (position === strArr.length)
+    return `${result}${lastChar}${count > 1 ? count : ""}`;
+  if (strArr[position] === lastChar)
+    return helper(strArr, position + 1, result, lastChar, count + 1);
+  return helper(
+    strArr,
+    position + 1,
+    `${result}${lastChar}${count > 1 ? count : ""}`,
+    strArr[position],
+    1
+  );
 };
-*/
-interface pair {
-  letter: string;
-  count: number;
-}
 export const runLengthEncoding: (str: string) => string = (
   str: string
 ): string => {
-  if (str.length == 0) return "";
-  const stringArr: string[] = stringToArray(str);
-  const firstLetter: pair = { letter: stringArr[0], count: 0 };
-  const pairArr: pair[] = stringArr.reduce(
-    (acc: pair[], curr: string) => {
-      const last: pair = acc[acc.length - 1];
-      if (last.letter === curr) {
-        acc[acc.length - 1] = { letter: last.letter, count: last.count + 1 };
-        return acc;
-      } else {
-        const newLetter: pair = { letter: curr, count: 1 };
-        return acc.concat([newLetter]);
-      }
-    },
-    [firstLetter]
-  );
-
-  return pairArr.reduce(
-    (acc: string, curr: pair) =>
-      curr.count > 1 ? acc + curr.letter + curr.count : acc + curr.letter,
-    ""
-  );
+  return helper(stringToArray(str), 0, "", "", 0); //input,position,result,lastChar,count
 };
-//console.log(runLengthEncoding("aaabbbccc"));
-
 //Question 3
 export const isPaired: (str: string) => boolean = (str: string): boolean => {
   const stringArr: string[] = stringToArray(str);
@@ -82,4 +54,3 @@ export const isPaired: (str: string) => boolean = (str: string): boolean => {
   }, "");
   return result.length == 0;
 };
-console.log(isPaired("This is [some[ (text)"));
