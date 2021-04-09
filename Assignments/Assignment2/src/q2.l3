@@ -23,11 +23,9 @@
 (define reverse 
   (lambda (lst)
     (
-      if(empty? list)
+      if(empty? lst)
        '()
-       (
-        append(reverse (cdr lst)) (cons (car lst) '())
-       )
+        (append (reverse (cdr lst)) (cons (car lst) '()))
        
     )  
   )
@@ -59,14 +57,11 @@
 
 (define duplicate-items
    (lambda(lst dup-count)
-       (let ((lst-length (length lst))
-          (dup-length (length dup-count)))
-      (if(> lst-length dup-length)
-         (duplicate-item lst (append dup-count dup-count))
+      (if(> (length lst) (length dup-count))
+         (duplicate-items lst (append dup-count dup-count))
          (duplicate-helper lst dup-count)
          )
       )
-   )
 )
 
 (define remove
