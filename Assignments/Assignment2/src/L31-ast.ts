@@ -1,6 +1,6 @@
 // ===========================================================
 // AST type models
-import { map, zipWith } from "ramda";
+import { map, unnest, zipWith } from "ramda";
 import { makeEmptySExp, makeSymbolSExp, SExpValue, makeCompoundSExp, valueToString } from '../imp/L3-value'
 import { first, second, rest, allT, isEmpty } from "../shared/list";
 import { isArray, isString, isNumericString, isIdentifier } from "../shared/type-predicates";
@@ -242,14 +242,30 @@ const parseLetExp = (bindings: Sexp, body: Sexp[]): Result<LetExp> => {
 export const parseLitExp = (param: Sexp): Result<LitExp> =>
     bind(parseSExp(param), (sexp: SExpValue) => makeOk(makeLitExp(sexp)));
 
-export const parseClassExp=(fields:Sexp, methods:Sexp[]):Result<ClassExp>=>{
-    !isArray(fields) || fields.length<=0 || allT(isString, fields) ? makeFailure("No fields were entered"):
-    methods.length < fields.length ? makeFailure("No methods were entered"):
-    !isGoodBindings(methods)? makeFailure("invalid bindings"):
+export const parseClassExp = (fields: Sexp, methods: Sexp[]) : Result<ClassExp> => 
+    {
+        //validate fields
+        if(!isArray(fields) || !allT(isString,fields) || fields.length==0) return makeFailure("error on fields");
+        methods=unnest(methods);
+        //validate methods
+        if(methods.length<fields.length) return makeFailure("error with number of methods");
+        if(!isGoodBindings(methods)) return makeFailure("error on bindings");
     
-
+        return bind(mapResult(((field: Sexp)=> makeOk(makeVarDecl(field.toString()))),fields),(varDecls: VarDecl[])=>{
     
-}
+           return bind(mapResult((methods)=>parseL31CExp(methods[1]),methods),(procs: CExp[])=>{
+    
+            //need to check for nested lambdas..
+            const procNames : string[] = methods.map((method)=> method[0].toString());
+    
+            const bindings : Binding[] = zipWith(makeBinding,procNames,procs);
+    
+            return makeOk(makeClassExp(varDecls,bindings));
+    
+           });
+    
+        });
+    }
 
 export const isDottedPair = (sexps: Sexp[]): boolean =>
     sexps.length === 3 && 
@@ -296,6 +312,11 @@ const unparseLExps = (les: Exp[]): string =>
 const unparseProcExp = (pe: ProcExp): string => 
     `(lambda (${map((p: VarDecl) => p.var, pe.args).join(" ")}) ${unparseLExps(pe.body)})`
 
+const unparseClassExp = (exp: ClassExp) : string => 
+    `(class (${exp.fields.map((p: VarDecl)=> p.var).join(" ")}) (${exp.methods.map((bind: Binding)=> unparseBinding(bind)).join(" ")}))`
+
+const unparseBinding = (binding : Binding) : string =>
+     `(${binding.var.var} ${isProcExp(binding.val) && unparseProcExp(binding.val)})`
 const unparseLetExp = (le: LetExp) : string => 
     `(let (${map((b: Binding) => `(${b.var.var} ${unparseL31(b.val)})`, le.bindings).join(" ")}) ${unparseLExps(le.body)})`
 
@@ -306,6 +327,7 @@ export const unparseL31 = (exp: Program | Exp): string =>
     isLitExp(exp) ? unparseLitExp(exp) :
     isVarRef(exp) ? exp.var :
     isProcExp(exp) ? unparseProcExp(exp) :
+    isClassExp(exp) ? unparseClassExp(exp) :
     isIfExp(exp) ? `(if ${unparseL31(exp.test)} ${unparseL31(exp.then)} ${unparseL31(exp.alt)})` :
     isAppExp(exp) ? `(${unparseL31(exp.rator)} ${unparseLExps(exp.rands)})` :
     isPrimOp(exp) ? exp.op :
