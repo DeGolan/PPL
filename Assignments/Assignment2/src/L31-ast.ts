@@ -1,10 +1,10 @@
 // ===========================================================
 // AST type models
-import { F, map, zipWith } from "ramda";
+import { F, map, unnest, zipWith } from "ramda";
 import { makeEmptySExp, makeSymbolSExp, SExpValue, makeCompoundSExp, valueToString } from '../imp/L3-value'
 import { first, second, rest, allT, isEmpty } from "../shared/list";
 import { isArray, isString, isNumericString, isIdentifier } from "../shared/type-predicates";
-import { Result, makeOk, makeFailure, bind, mapResult, safe2 } from "../shared/result";
+import { Result, makeOk, makeFailure, bind, mapResult, safe2, zipWithResult } from "../shared/result";
 import { parse as p, isSexpString, isToken } from "../shared/parser";
 import { Sexp, Token } from "s-expression";
 
@@ -127,7 +127,7 @@ export const isAtomicExp = (x: any): x is AtomicExp =>
     isNumExp(x) || isBoolExp(x) || isStrExp(x) ||
     isPrimOp(x) || isVarRef(x);
 export const isCompoundExp = (x: any): x is CompoundExp =>
-    isAppExp(x) || isIfExp(x) || isProcExp(x) || isLitExp(x) || isLetExp(x);
+    isAppExp(x) || isIfExp(x) || isProcExp(x) || isLitExp(x) || isLetExp(x) || isClassExp(x);
 export const isCExp = (x: any): x is CExp =>
     isAtomicExp(x) || isCompoundExp(x);
 
@@ -218,19 +218,29 @@ const parseAppExp = (op: Sexp, params: Sexp[]): Result<AppExp> =>
     safe2((rator: CExp, rands: CExp[]) => makeOk(makeAppExp(rator, rands)))
         (parseL31CExp(op), mapResult(parseL31CExp, params));
 
-// ( class ( <var>+ ) ( <binding>+ ) ) / ClassExp(fields:VarDecl[], methods:Binding[]))  ###L31
-//fields : [a,b]
-//methods :  [[first,[lambda , [], a]], [second,[lambda,[],b]],..]
-
 const parseClassExp = (fields: Sexp, methods: Sexp[]) : Result<ClassExp> => 
 {
-    
+    methods = unnest(methods);
+    //validate fields
+    if(!isArray(fields) || !allT(isString,fields) || fields.length==0) return makeFailure("error on fields");
+    //validate methods
+    if(methods.length<fields.length) return makeFailure("error with number of methods");
+    if(!isGoodBindings(methods)) return makeFailure("error on bindings");
+
+    return bind(mapResult(((field: Sexp)=> makeOk(makeVarDecl(field.toString()))),fields),(varDecls: VarDecl[])=>{
+
+       return bind(mapResult((methods)=>parseL31CExp(methods[1]),methods),(procs: CExp[])=>{
+
+        const procNames : string[] = methods.map((method)=> method[0].toString());
+        const bindings : Binding[] = zipWith(makeBinding,procNames,procs);
+
+        return makeOk(makeClassExp(varDecls,bindings));
+
+       });
+
+    });
 }
-    
-    
-
-
-       
+          
 const parseIfExp = (params: Sexp[]): Result<IfExp> =>
     params.length !== 3 ? makeFailure("Expression not of the form (if <cexp> <cexp> <cexp>)") :
     bind(mapResult(parseL31CExp, params),
@@ -308,6 +318,12 @@ const unparseProcExp = (pe: ProcExp): string =>
 const unparseLetExp = (le: LetExp) : string => 
     `(let (${map((b: Binding) => `(${b.var.var} ${unparseL31(b.val)})`, le.bindings).join(" ")}) ${unparseLExps(le.body)})`
 
+const unparseClassExp = (exp: ClassExp) : string => 
+    `(class (${exp.fields.map((p: VarDecl)=> p.var).join(" ")}) (${exp.methods.map((bind: Binding)=> unparseBinding(bind)).join(" ")}))`
+
+const unparseBinding = (binding : Binding) : string =>
+     `(${binding.var.var} ${isProcExp(binding.val) && unparseProcExp(binding.val)})`
+
 export const unparseL31 = (exp: Program | Exp): string =>
     isBoolExp(exp) ? valueToString(exp.val) :
     isNumExp(exp) ? valueToString(exp.val) :
@@ -315,6 +331,7 @@ export const unparseL31 = (exp: Program | Exp): string =>
     isLitExp(exp) ? unparseLitExp(exp) :
     isVarRef(exp) ? exp.var :
     isProcExp(exp) ? unparseProcExp(exp) :
+    isClassExp(exp) ? unparseClassExp(exp) : 
     isIfExp(exp) ? `(if ${unparseL31(exp.test)} ${unparseL31(exp.then)} ${unparseL31(exp.alt)})` :
     isAppExp(exp) ? `(${unparseL31(exp.rator)} ${unparseLExps(exp.rands)})` :
     isPrimOp(exp) ? exp.op :
