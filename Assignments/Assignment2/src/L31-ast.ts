@@ -300,7 +300,7 @@ import { parseL3CExp } from "../imp/L3-ast";
 
 
 // Add a quote for symbols, empty and compound sexp - strings and numbers are not quoted.
-const unparseLitExp = (le: LitExp): string =>
+export const unparseLitExp = (le: LitExp): string =>
     isEmptySExp(le.val) ? `'()` :
     isSymbolSExp(le.val) ? `'${valueToString(le.val)}` :
     isCompoundSExp(le.val) ? `'${valueToString(le.val)}` :
