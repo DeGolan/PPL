@@ -2,6 +2,8 @@
 import { DefineExp,ClassExp, ProcExp, Exp, Program,Binding,CExp,makeBoolExp,makeIfExp,makeAppExp,makeStrExp,makePrimOp,makeVarDecl,makeProcExp,VarDecl,isDefineExp, makeDefineExp, isNumExp, isBoolExp, isStrExp, isPrimOp, isVarRef, isClassExp, isAppExp, isIfExp, isProcExp, isLetExp, makeLetExp, makeBinding, isLitExp, isExp, isCExp, isProgram, makeProgram, makeVarRef  } from "./L31-ast";
 import { Result, makeFailure, makeOk } from "../shared/result";
 import {first,rest} from  "../shared/list"
+import { makeLitExp } from "../imp/L3-ast";
+import { makeSymbolSExp } from "../imp/L3-value";
 /*
 Purpose: Transform ClassExp to ProcExp
 Signature: for2proc(classExp)
@@ -13,7 +15,7 @@ const reWriteToIf = (bindings: Binding[]) : CExp => {
         return makeBoolExp(false);
     const firstElement : Binding = first(bindings);
     const proc : CExp = firstElement.val;
-    return makeIfExp(makeAppExp(makePrimOp('eq?'),[makeVarRef('msg'),makeVarRef(`'${firstElement.var.var}`)]),makeAppExp(proc, []),reWriteToIf(rest(bindings)));
+    return makeIfExp(makeAppExp(makePrimOp('eq?'),[makeVarRef('msg'),makeLitExp(makeSymbolSExp(`${firstElement.var.var}`))]),makeAppExp(proc, []),reWriteToIf(rest(bindings)));
 
 }
 export const class2proc = (exp: ClassExp): ProcExp =>{

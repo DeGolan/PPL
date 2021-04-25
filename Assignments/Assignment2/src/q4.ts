@@ -14,8 +14,8 @@ const unparsePrimOp = (exp : PrimOp) : string => {
 
     return basics.includes(exp.op) ? exp.op :
            (exp.op === 'eq?' || exp.op === '=') ? '==' :
-           exp.op === 'number?' ? `(lambda x: type(x) == number)` :
-           exp.op === 'boolean?' ? `(lambda x: type(x) == bool)`:
+           exp.op === 'number?' ? `(lambda x: (type(x) == int or type(x) == float))` :
+           exp.op === 'boolean?' ? `(lambda x: (type(x) == bool))`:
            ''
 }
 
