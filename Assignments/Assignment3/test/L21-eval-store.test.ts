@@ -240,8 +240,7 @@ describe('L21 Box Eval', () => {
                     (set! x (+ x 1))
                     x)
             )`), evalProgram)
-        ).to.deep.equal(makeOk(2))
+        ).to.deep.equal(makeOk(2));;;;;;;;;
     })
 
 });
-
