@@ -4,9 +4,15 @@
 
 import { map, reduce, repeat, values, zip, zipWith } from "ramda";
 import { isBoolExp, isCExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef,
+<<<<<<< HEAD
          isAppExp, isDefineExp, isIfExp, isLetExp, isProcExp, Binding, VarDecl, CExp, Exp, IfExp, LetExp, ProcExp, Program,
          parseL21Exp, DefineExp, SetExp, isSetExp} from "./L21-ast";
 import { applyEnv, makeExtEnv, Env, Store, setStore, extendStore, ExtEnv, theGlobalEnv, globalEnvAddBinding, theStore, applyStore } from "./L21-env-store";
+=======
+         isAppExp, isDefineExp, isIfExp, isLetExp, isProcExp, Binding, VarDecl, CExp, Exp, IfExp, LetExp,SetExp, ProcExp, Program,
+         parseL21Exp, DefineExp, isSetExp} from "./L21-ast";
+import { applyEnv, makeExtEnv, Env, Store, setStore, extendStore, ExtEnv, theGlobalEnv, globalEnvAddBinding, theStore,applyStore } from "./L21-env-store";
+>>>>>>> 1bdd044c6eda8d1ddf820fabe43b6da274affb45
 import { isClosure, makeClosure, Closure, Value } from "./L21-value-store";
 import { applyPrimitive } from "./evalPrimitive-store";
 import { first, rest, isEmpty } from "../shared/list";
@@ -50,7 +56,11 @@ const applyProcedure = (proc: Value, args: Value[]): Result<Value> =>
 
 const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
     const vars = map((v: VarDecl) => v.var, proc.params);
+<<<<<<< HEAD
     const addresses: number[] = map((val:Value)=>(extendStore(theStore,val)).vals.length-1,args);
+=======
+    const addresses: number[] = map((val)=> (extendStore(theStore,val)).vals.length-1,args);
+>>>>>>> 1bdd044c6eda8d1ddf820fabe43b6da274affb45
     const newEnv: ExtEnv = makeExtEnv(vars, addresses, proc.env);
     return evalSequence(proc.body, newEnv);
 }
@@ -68,8 +78,14 @@ const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
 
 const evalDefineExps = (def: DefineExp, exps: Exp[]): Result<Value> =>
     bind(applicativeEval(def.val, theGlobalEnv),
+<<<<<<< HEAD
         (rhs: Value) => { globalEnvAddBinding(def.var.var, (extendStore(theStore,rhs).vals.length-1));
                     return evalSequence(exps, theGlobalEnv); });
+=======
+    (rhs: Value) => { //rhs is closure for example 
+        globalEnvAddBinding(def.var.var, (extendStore(theStore,rhs).vals.length-1));
+        return evalSequence(exps, theGlobalEnv); });
+>>>>>>> 1bdd044c6eda8d1ddf820fabe43b6da274affb45
 
 // Main program
 // L2-BOX @@ Use GE instead of empty-env
@@ -85,14 +101,23 @@ const evalLet = (exp: LetExp, env: Env): Result<Value> => {
     const vals = mapResult((v: CExp) => applicativeEval(v, env), map((b: Binding) => b.val, exp.bindings));
     const vars = map((b: Binding) => b.var.var, exp.bindings);
 
-    
+
     return bind(vals, (vals: Value[]) => {
+<<<<<<< HEAD
         const addresses = map((val:Value)=>(extendStore(theStore,val)).vals.length-1,vals);
+=======
+        const addresses: number[] = map((val)=> (extendStore(theStore,val)).vals.length-1,vals); 
+>>>>>>> 1bdd044c6eda8d1ddf820fabe43b6da274affb45
         const newEnv = makeExtEnv(vars, addresses, env)
         return evalSequence(exp.body, newEnv);
     })
 }
+<<<<<<< HEAD
 //Set
 const evalSet = (exp: SetExp, env: Env): Result<void> =>
+=======
+
+const evalSet = (exp: SetExp, env: Env): Result<void>=>
+>>>>>>> 1bdd044c6eda8d1ddf820fabe43b6da274affb45
     safe2((val: Value, addr: number) => makeOk(setStore(theStore,addr,val)))
         (applicativeEval(exp.val, env), applyEnv(env, exp.var.var));
