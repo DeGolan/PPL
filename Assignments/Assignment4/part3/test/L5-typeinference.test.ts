@@ -9,7 +9,7 @@ import { parse as p } from "../shared/parser";
 
 describe('L5 Type Inference', () => {
     describe('inferTypeOf', () => {
-        it('infers the type of atoms', () => {
+       it('infers the type of atoms', () => {
             expect(inferTypeOf("5")).to.deep.equal(makeOk("number"));
             expect(inferTypeOf("#t")).to.deep.equal(makeOk("boolean"));
         });

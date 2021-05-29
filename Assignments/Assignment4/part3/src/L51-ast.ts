@@ -5,14 +5,14 @@
 // L51 extends L5 with:
 // typed class construct
 
-import { concat, chain, join, map, zipWith } from "ramda";
+import { concat, chain, join, map, zipWith, type } from "ramda";
 import { Sexp, Token } from 's-expression';
 import { isCompoundSExp, isEmptySExp, isSymbolSExp, makeCompoundSExp, makeEmptySExp, makeSymbolSExp, SExpValue, valueToString } from '../imp/L5-value';
-import { allT, first, rest, second, isEmpty } from '../shared/list';
+import { allT, first, rest, second, isEmpty, cons } from '../shared/list';
 import { parse as p, isToken, isSexpString } from "../shared/parser";
 import { Result, bind, makeFailure, mapResult, makeOk, safe2, safe3 } from "../shared/result";
 import { isArray, isString, isNumericString, isIdentifier } from "../shared/type-predicates";
-import { isTVar, makeFreshTVar, makeTVar, parseTExp, unparseTExp, TVar, TExp } from './TExp51';
+import { isTVar, makeFreshTVar, makeTVar, parseTExp, unparseTExp, TVar, TExp, tvarSetContents, parseClassTExp } from './TExp51';
 import { makeClassTExp, ClassTExp } from "./TExp51";
 
 /*
@@ -335,8 +335,15 @@ const parseClassExp = (params: Sexp[]): Result<ClassExp> =>
     (params.length != 4) || (params[0] != ':') ? makeFailure(`class must have shape (class [: <type>]? <fields> <methods>) - got ${params.length} params instead`) :
     parseGoodClassExp(params[1], params[2], params[3]);
 
-const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Result<ClassExp> =>
-    makeFailure("TODO parseGoodClassExp");
+const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Result<ClassExp> => {
+
+    const varDeclsExp : Result<VarDecl[]> = isArray(varDecls) ? mapResult(parseVarDecl,varDecls) : makeFailure("not possilbe");
+    const bindingsExp : Result<Binding[]> = isGoodBindings(bindings) ? parseBindings(bindings) : makeFailure("bad bindings");
+    const TExpr : TVar = makeTVar(typeName.toString());
+    tvarSetContents(TExpr,parseClassTExp(['class',typeName,bindings]));
+    return safe3((typeName:TVar,fields:VarDecl[],methods:Binding[])=>makeOk(makeClassExp(typeName,fields,methods)))(makeOk(TExpr),varDeclsExp,bindingsExp);
+}    
+
 
 // sexps has the shape (quote <sexp>)
 export const parseLitExp = (param: Sexp): Result<LitExp> =>
@@ -448,11 +455,11 @@ const unparseClassExp = (ce: ClassExp, unparseWithTVars?: boolean): Result<strin
 // L51: Collect named types in AST
 // Collect class expressions in parsed AST so that they can be passed to the type inference module
 
-export const parsedToClassExps = (p: Parsed): ClassExp[] => 
-    // TODO parsedToClassExps
-    [];
-
+export const parsedToClassExps = (p: Parsed): ClassExp[] => {
+    const pArr : Exp[] = isProgram(p) ? p.exps : [p]
+    return pArr.reduce((acc : ClassExp[] ,curr)=> isDefineExp(curr) && isClassExp(curr.val) ? cons(curr.val,acc) : acc ,[]);
+}
 // L51 
 export const classExpToClassTExp = (ce: ClassExp): ClassTExp => 
     makeClassTExp(ce.typeName.var, map((binding: Binding) => [binding.var.var, binding.var.texp], ce.methods));
-    
+      
