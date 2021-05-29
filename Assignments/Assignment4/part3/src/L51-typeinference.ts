@@ -9,6 +9,7 @@ import * as T from "./TExp51";
 import { allT, first, rest, isEmpty } from "../shared/list";
 import { isNumber, isString } from '../shared/type-predicates';
 import { Result, makeFailure, makeOk, bind, safe2,safe3, zipWithResult, mapResult } from "../shared/result";
+import { makeExtEnv } from "../imp/L5-env";
 
 // Purpose: Make type expressions equivalent by deriving a unifier
 // Return an error if the types are not unifiable.
@@ -102,8 +103,11 @@ const checkNoOccurrence = (tvar: T.TVar, te: T.TExp, exp: A.Exp): Result<true> =
 // so that the user defined types are known to the type inference system.
 // For each class (class : typename ...) add a pair <class.typename classTExp> to TEnv
 export const makeTEnvFromClasses = (parsed: A.Parsed): E.TEnv => {
-    // TODO makeTEnvFromClasses
-    return E.makeEmptyTEnv();
+    
+    const emptyTEnv = E.makeEmptyTEnv();
+    const classExps : A.ClassExp[] = A.parsedToClassExps(parsed);
+    return E.makeExtendTEnv()
+
 }
 
 // Purpose: Compute the type of a concrete expression
@@ -257,7 +261,7 @@ export const typeofProgram = (exp: A.Program, tenv: E.TEnv): Result<T.TExp> =>
 
 const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> => 
     isEmpty(exps) ? typeofExp(exp,tenv) : 
-    A.isDefineExp(exp)  ? bind(typeofDefine(exp,tenv),_=> typeofProgramExps(first(exps),rest(exps),E.makeExtendTEnv([exp.var.var],[exp.var.texp],tenv))) : 
+    A.isDefineExp(exp) && !A.isClassExp(exp.val)  ? bind(typeofDefine(exp,tenv),_=> typeofProgramExps(first(exps),rest(exps),E.makeExtendTEnv([exp.var.var],[exp.var.texp],tenv))) : 
     typeofProgramExps(first(exps),rest(exps),tenv)
     
     
@@ -268,7 +272,9 @@ const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TE
 //      - for a symbol - record the value of the symbol in the SymbolTExp
 //        so that precise type checking can be made on ground symbol values.
 export const typeofLit = (exp: A.LitExp): Result<T.TExp> =>
-    makeFailure(`TODO typeofLit`);
+    V.isSymbolSExp(exp.val) ? makeOk(T.makeSymbolTExp(exp.val))
+    : A.isCompoundExp(exp.val) ? makeOk(T.makePairTExp()) : 
+    makeFailure("")
 
 
 // Purpose: compute the type of a set! expression
