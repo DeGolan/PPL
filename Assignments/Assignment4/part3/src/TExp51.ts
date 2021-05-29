@@ -213,7 +213,7 @@ const parseCompoundTExp = (texps: Sexp[]): Result<CompoundTExp> =>
 
 // L51
 // Example: (class typename (first : (Empty -> number)) (rest : (Empty -> number)))
-const parseClassTExp = (texps: Sexp[]): Result<ClassTExp> => {
+ const parseClassTExp = (texps: Sexp[]): Result<ClassTExp> => {
     const parseGoodMethod = (method: Sexp, texp: Sexp) : Result<[string, TExp]> => 
         !isString(method) ? makeFailure(`Method must be of shape (method : texp) - got ${method}`) :
         bind(parseTExp(texp), te => makeOk([method, te]));

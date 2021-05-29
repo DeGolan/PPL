@@ -106,8 +106,9 @@ export const makeTEnvFromClasses = (parsed: A.Parsed): E.TEnv => {
     
     const emptyTEnv = E.makeEmptyTEnv();
     const classExps : A.ClassExp[] = A.parsedToClassExps(parsed);
-    return E.makeExtendTEnv()
-
+    const classNames : string[] = classExps.map((exp)=>exp.typeName.tag);
+    const classTExps : T.ClassTExp[] = classExps.map(A.classExpToClassTExp);
+    return E.makeExtendTEnv(classNames,classTExps,emptyTEnv);
 }
 
 // Purpose: Compute the type of a concrete expression

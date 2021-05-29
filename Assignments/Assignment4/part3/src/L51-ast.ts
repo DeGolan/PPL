@@ -12,8 +12,8 @@ import { allT, first, rest, second, isEmpty, cons } from '../shared/list';
 import { parse as p, isToken, isSexpString } from "../shared/parser";
 import { Result, bind, makeFailure, mapResult, makeOk, safe2, safe3 } from "../shared/result";
 import { isArray, isString, isNumericString, isIdentifier } from "../shared/type-predicates";
-import { isTVar, makeFreshTVar, makeTVar, parseTExp, unparseTExp, TVar, TExp, tvarSetContents, parseClassTExp } from './TExp51';
-import { makeClassTExp, ClassTExp } from "./TExp51";
+import { isTVar, makeFreshTVar, makeTVar, parseTExp, unparseTExp, TVar, TExp, tvarSetContents} from './TExp51';
+import { makeClassTExp, ClassTExp} from "./TExp51";
 
 /*
 // =============================================================================
@@ -337,10 +337,9 @@ const parseClassExp = (params: Sexp[]): Result<ClassExp> =>
 
 const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Result<ClassExp> => {
 
-    const varDeclsExp : Result<VarDecl[]> = isArray(varDecls) ? mapResult(parseVarDecl,varDecls) : makeFailure("not possilbe");
+    const varDeclsExp : Result<VarDecl[]> = isArray(varDecls) ? mapResult(parseVarDecl,varDecls) : makeFailure("not possible");
     const bindingsExp : Result<Binding[]> = isGoodBindings(bindings) ? parseBindings(bindings) : makeFailure("bad bindings");
     const TExpr : TVar = makeTVar(typeName.toString());
-    tvarSetContents(TExpr,parseClassTExp(['class',typeName,bindings]));
     return safe3((typeName:TVar,fields:VarDecl[],methods:Binding[])=>makeOk(makeClassExp(typeName,fields,methods)))(makeOk(TExpr),varDeclsExp,bindingsExp);
 }    
 
