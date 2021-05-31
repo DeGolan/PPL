@@ -6,7 +6,7 @@ import * as TC from "./L51-typecheck";
 import * as V from "../imp/L5-value";
 import * as E from "../imp/TEnv";
 import * as T from "./TExp51";
-import { allT, first, rest, isEmpty } from "../shared/list";
+import { allT, first, rest, isEmpty, cons } from "../shared/list";
 import { isNumber, isString } from '../shared/type-predicates';
 import { Result, makeFailure, makeOk, bind, safe2,safe3, zipWithResult, mapResult } from "../shared/result";
 import { makeExtEnv } from "../imp/L5-env";
@@ -106,9 +106,9 @@ export const makeTEnvFromClasses = (parsed: A.Parsed): E.TEnv => {
     
     const emptyTEnv = E.makeEmptyTEnv();
     const classExps : A.ClassExp[] = A.parsedToClassExps(parsed);
-    const classNames : string[] = classExps.map((exp)=>exp.typeName.tag);
+    const classNames : string[] = classExps.map((exp)=>exp.typeName.var);
     const classTExps : T.ClassTExp[] = classExps.map(A.classExpToClassTExp);
-    return E.makeExtendTEnv(classNames,classTExps,emptyTEnv);
+    return isEmpty(classExps) ? emptyTEnv : E.makeExtendTEnv(classNames,classTExps,emptyTEnv);
 }
 
 // Purpose: Compute the type of a concrete expression
@@ -260,13 +260,21 @@ export const typeofProgram = (exp: A.Program, tenv: E.TEnv): Result<T.TExp> =>
     isEmpty(exp.exps) ? makeFailure("Empty program") :
     typeofProgramExps(first(exp.exps), rest(exp.exps), tenv);
 
-const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> => 
-    isEmpty(exps) ? typeofExp(exp,tenv) : 
-    A.isDefineExp(exp) && !A.isClassExp(exp.val)  ? bind(typeofDefine(exp,tenv),_=> typeofProgramExps(first(exps),rest(exps),E.makeExtendTEnv([exp.var.var],[exp.var.texp],tenv))) : 
-    typeofProgramExps(first(exps),rest(exps),tenv)
-    
-    
+const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> => { 
 
+    if(isEmpty(exps)){
+        if(!A.isDefineExp(exp))
+            return typeofExp(exp,tenv)
+        else
+            return typeofDefine(exp,tenv);
+    }
+    else{
+        if(A.isDefineExp(exp))
+            return bind(typeofDefine(exp,tenv),_=> typeofProgramExps(first(exps),rest(exps),E.makeExtendTEnv([exp.var.var],[exp.var.texp],tenv)));
+        else
+            return bind(typeofExp(exp,tenv), _=> typeofProgramExps(first(exps),rest(exps),tenv));
+    }
+}
 
 // Purpose: compute the type of a literal expression
 //      - Only need to cover the case of Symbol and Pair
@@ -274,7 +282,7 @@ const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TE
 //        so that precise type checking can be made on ground symbol values.
 export const typeofLit = (exp: A.LitExp): Result<T.TExp> =>
     V.isSymbolSExp(exp.val) ? makeOk(T.makeSymbolTExp(exp.val))
-    : A.isCompoundExp(exp.val) ? makeOk(T.makePairTExp()) : 
+    : V.isCompoundSExp(exp.val) ? makeOk(T.makePairTExp()) : 
     makeFailure("")
 
 
@@ -301,5 +309,12 @@ export const typeofSet = (exp: A.SetExp, tenv: E.TEnv): Result<T.VoidTExp> => {
 //      type<method_k>(class-tenv) = mk
 // Then type<class(type fields methods)>(tend) = = [t1 * ... * tn -> type]
 export const typeofClass = (exp: A.ClassExp, tenv: E.TEnv): Result<T.TExp> => {
-    return makeFailure("TODO typeofClass");
+
+    const fieldsTE = exp.fields.map((arg)=>arg.texp);
+    const fieldsNames = exp.fields.map((arg)=>arg.var);
+    const classTenv = E.makeExtendTEnv(fieldsNames,fieldsTE,tenv);
+    const methodsNamesTE = exp.methods.map(method=>method.var.texp);
+    const methodsTE = mapResult(method=>typeofExp(method.val,classTenv),exp.methods);
+    const constraints = bind(methodsTE, metTEArr=> checkEqualTypes(methodsNamesTE,metTEArr,exp))
+    return bind(constraints,_=> makeOk(T.makeProcTExp(fieldsTE,A.classExpToClassTExp(exp))));
 };
